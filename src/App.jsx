@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import PanoViewer from './PanoViewer.jsx';
 import Minimap from './Minimap.jsx';
+import InfoPanel from './InfoPanel.jsx';
 import { scenes } from './scenes.js';
 
 export default function App() {
@@ -28,7 +29,9 @@ export default function App() {
 
   return (
     <div className="app">
-      <PanoViewer currentSceneId={currentSceneId} />
+      <PanoViewer currentSceneId={currentSceneId} onSceneChange={setCurrentSceneId} />
+
+      <InfoPanel annotations={current.annotations} />
 
       <div className="title-chip">{current.title}</div>
 

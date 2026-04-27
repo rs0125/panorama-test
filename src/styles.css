@@ -74,6 +74,79 @@ body { user-select: none; -webkit-user-select: none; }
   text-overflow: ellipsis;
 }
 
+/* Info panel */
+.info {
+  position: absolute;
+  top: calc(14px + var(--safe-top));
+  left: calc(14px + var(--safe-left));
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  max-height: calc(100dvh - 28px - var(--safe-top) - var(--safe-bottom));
+}
+.info__btn {
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  transition: transform 0.15s ease, background 0.2s ease;
+  flex-shrink: 0;
+}
+.info__btn:hover { background: var(--glass-bg-strong); }
+.info__btn:active { transform: scale(0.94); }
+.info__btn:disabled { opacity: 0.4; cursor: default; }
+
+.info__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 280px;
+  max-width: calc(100vw - 28px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 2px;
+}
+
+.info__card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: #fff;
+  animation: infoCardIn 0.25s ease both;
+}
+.info__card-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin-bottom: 4px;
+}
+.info__card-body {
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+@keyframes infoCardIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .fs-btn {
   position: absolute;
   top: calc(14px + var(--safe-top));
@@ -277,6 +350,10 @@ body { user-select: none; -webkit-user-select: none; }
 
 /* Phones — portrait */
 @media (max-width: 600px) {
+  .info { top: calc(10px + var(--safe-top)); left: calc(10px + var(--safe-left)); }
+  .info__btn { width: 40px; height: 40px; border-radius: 14px; }
+  .info__list { width: 240px; }
+
   .minimap {
     width: 200px;
     height: 150px;
@@ -338,6 +415,44 @@ body { user-select: none; -webkit-user-select: none; }
 }
 
 .pnlm-load-box, .pnlm-load-button { font-family: inherit !important; }
+
+/* Soften the equirectangular preview so the warped poles aren't visible */
+.pnlm-preview-img {
+  filter: blur(28px) saturate(115%) brightness(0.7);
+  transform: scale(1.08); /* hide blur edge fringe */
+  transition: opacity 0.4s ease;
+}
+
+/* Subtle vignette + spinner over the preview */
+.pano-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.35) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.pano-container.is-loading::after { opacity: 1; }
+
+.pano-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: rgba(255, 255, 255, 0.85);
+  animation: panoSpin 0.9s linear infinite;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.pano-loading.is-visible { opacity: 1; }
+@keyframes panoSpin { to { transform: rotate(360deg); } }
 
 /* Pannellum hotspot — blurry pill with the destination name; orange glow on hover */
 .pnlm-hotspot.hs,

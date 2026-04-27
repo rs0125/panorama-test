@@ -30,9 +30,10 @@ function waitForPannellum() {
   });
 }
 
-export default function PanoViewer({ currentSceneId }) {
+export default function PanoViewer({ currentSceneId, onSceneChange }) {
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
+  const [loading, setLoading] = useState(true);
   const [editTarget, setEditTarget] = useState(
     () => scenes.find((s) => s.id !== currentSceneId)?.id || scenes[0].id
   );
@@ -60,9 +61,11 @@ export default function PanoViewer({ currentSceneId }) {
             createTooltipArgs: { label: target?.title || h.to },
           };
         });
+        const previewSrc = s.image.replace('/panos/', '/panos/previews/').replace('.jpeg', '.jpg');
         sceneMap[s.id] = {
           type: 'equirectangular',
           panorama: s.image,
+          preview: previewSrc,
           autoLoad: true,
           hfov: initialHfov,
           showControls: false,
@@ -80,6 +83,16 @@ export default function PanoViewer({ currentSceneId }) {
           maxHfov: 120,
         },
         scenes: sceneMap,
+      });
+
+      viewerRef.current.on('scenechange', (sceneId) => {
+        if (cancelled) return;
+        setLoading(true);
+        onSceneChange?.(sceneId);
+      });
+      viewerRef.current.on('load', () => {
+        if (cancelled) return;
+        setLoading(false);
       });
 
 
@@ -145,7 +158,8 @@ export default function PanoViewer({ currentSceneId }) {
 
   return (
     <>
-      <div ref={containerRef} className="pano-container" />
+      <div ref={containerRef} className={`pano-container ${loading ? 'is-loading' : ''}`} />
+      <div className={`pano-loading ${loading ? 'is-visible' : ''}`} aria-hidden="true" />
       {EDIT_MODE && (
         <div className="edit-bar">
           <span className="edit-bar__label">Hotspot target →</span>
