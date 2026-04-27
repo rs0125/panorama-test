@@ -14,7 +14,7 @@ export const scenes = [
     image: '/panos/WH_Entrance_Gate_001_93790826a1.jpg.jpeg',
     minimap: { x: 0.847, y: 0.336 },
     hotspots: [
-      { to: 'gate', pitch: 0.5, yaw: 179.14 },
+      { to: 'approach', pitch: 0.5, yaw: 179.14 },
       { to: 'way', pitch: -5.47, yaw: -41.23 },
     ],
   },
