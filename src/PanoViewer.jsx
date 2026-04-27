@@ -30,6 +30,21 @@ function waitForPannellum() {
   });
 }
 
+function preloadImage(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = img.onerror = () => resolve(src);
+    img.src = src;
+  });
+}
+
+async function preloadRemainingScenes(firstSceneId) {
+  const remaining = scenes.filter((s) => s.id !== firstSceneId);
+  for (const s of remaining) {
+    await preloadImage(s.image);
+  }
+}
+
 export default function PanoViewer({ currentSceneId }) {
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
@@ -80,6 +95,16 @@ export default function PanoViewer({ currentSceneId }) {
           maxHfov: 120,
         },
         scenes: sceneMap,
+      });
+
+      const startPreload = () => preloadRemainingScenes(currentSceneId);
+      viewerRef.current.on('load', () => {
+        if (cancelled) return;
+        if ('requestIdleCallback' in window) {
+          window.requestIdleCallback(startPreload, { timeout: 2000 });
+        } else {
+          setTimeout(startPreload, 1000);
+        }
       });
 
       if (EDIT_MODE) {
