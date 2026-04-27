@@ -4,9 +4,7 @@ import { scenes as defaultScenes } from './scenes.js';
 const EDIT_MODE = new URLSearchParams(window.location.search).has('edit');
 
 export default function Minimap({ currentSceneId, onSelect }) {
-  const [collapsed, setCollapsed] = useState(
-    typeof window !== 'undefined' && window.matchMedia('(max-width: 600px)').matches
-  );
+  const [collapsed, setCollapsed] = useState(false);
   const [coords, setCoords] = useState(() =>
     Object.fromEntries(defaultScenes.map((s) => [s.id, { ...s.minimap }]))
   );
@@ -61,7 +59,16 @@ export default function Minimap({ currentSceneId, onSelect }) {
         onClick={() => setCollapsed((c) => !c)}
         aria-label={collapsed ? 'Expand minimap' : 'Collapse minimap'}
       >
-        {collapsed ? '🗺' : '×'}
+        {collapsed ? (
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path
+              d="M12 2.5c-3.59 0-6.5 2.91-6.5 6.5 0 4.78 6.5 12.5 6.5 12.5s6.5-7.72 6.5-12.5c0-3.59-2.91-6.5-6.5-6.5zm0 9a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"
+              fill="currentColor"
+            />
+          </svg>
+        ) : (
+          '×'
+        )}
       </button>
       {!collapsed && (
         <div className="minimap__inner" ref={innerRef}>

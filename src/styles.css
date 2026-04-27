@@ -21,14 +21,18 @@ html, body, #root {
   height: 100%;
   margin: 0;
   background: var(--bg);
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-family: 'Mona Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: #eee;
   overflow: hidden;
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
   touch-action: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+button, select, input { font: inherit; }
 
 body { user-select: none; -webkit-user-select: none; }
 
@@ -334,6 +338,80 @@ body { user-select: none; -webkit-user-select: none; }
 }
 
 .pnlm-load-box, .pnlm-load-button { font-family: inherit !important; }
+
+/* Pannellum hotspot — blurry pill with the destination name; orange glow on hover */
+.pnlm-hotspot.hs,
+.pnlm-hotspot.hs:hover {
+  background: none !important;
+  background-color: transparent !important;
+  width: 0 !important;
+  height: 0 !important;
+  border-radius: 0 !important;
+  cursor: pointer;
+}
+.hs__pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 7px 7px 16px;
+  border-radius: 999px;
+  white-space: nowrap;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.95);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.02) 100%),
+    rgba(18, 20, 24, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: saturate(160%) blur(20px);
+  -webkit-backdrop-filter: saturate(160%) blur(20px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    0 6px 20px rgba(0, 0, 0, 0.35);
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease,
+    transform 0.25s ease;
+}
+.hs__label {
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  line-height: 1;
+}
+.hs__icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, rgba(255, 168, 99, 0.95), rgba(255, 110, 41, 0.95));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 2px 6px rgba(255, 110, 41, 0.35);
+  transition: transform 0.25s ease;
+}
+.hs__icon {
+  width: 16px;
+  height: 16px;
+  color: #fff;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+.hs__pill:hover {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.04) 100%),
+    rgba(18, 20, 24, 0.45);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+.hs__pill:hover .hs__icon-wrap {
+  transform: scale(1.06);
+}
 
 .edit-bar {
   position: absolute;

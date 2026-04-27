@@ -1,7 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
-import { scenes } from './scenes.js';
+import { scenes, sceneById } from './scenes.js';
 
 const EDIT_MODE = new URLSearchParams(window.location.search).has('edit');
+
+function buildHotspotTooltip(hotDiv, args) {
+  hotDiv.classList.add('hs');
+  const pill = document.createElement('div');
+  pill.className = 'hs__pill';
+  pill.innerHTML = `
+    <span class="hs__label">${args.label}</span>
+    <span class="hs__icon-wrap">
+      <svg class="hs__icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2.5c-3.59 0-6.5 2.91-6.5 6.5 0 4.78 6.5 12.5 6.5 12.5s6.5-7.72 6.5-12.5c0-3.59-2.91-6.5-6.5-6.5zm0 9a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z" fill="currentColor"/>
+      </svg>
+    </span>
+  `;
+  hotDiv.appendChild(pill);
+}
 
 function waitForPannellum() {
   return new Promise((resolve) => {
@@ -33,13 +48,25 @@ export default function PanoViewer({ currentSceneId }) {
       const initialHfov = isNarrow ? 75 : 100;
       const sceneMap = {};
       scenes.forEach((s) => {
+        const hotSpots = (s.hotspots || []).map((h) => {
+          const target = sceneById[h.to];
+          return {
+            pitch: h.pitch,
+            yaw: h.yaw,
+            type: 'scene',
+            sceneId: h.to,
+            cssClass: 'hs',
+            createTooltipFunc: buildHotspotTooltip,
+            createTooltipArgs: { label: target?.title || h.to },
+          };
+        });
         sceneMap[s.id] = {
           type: 'equirectangular',
           panorama: s.image,
-          title: s.title,
           autoLoad: true,
           hfov: initialHfov,
           showControls: false,
+          hotSpots,
         };
       });
       viewerRef.current = pannellum.viewer(containerRef.current, {
