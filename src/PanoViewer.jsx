@@ -30,36 +30,6 @@ function waitForPannellum() {
   });
 }
 
-function preloadImage(src) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.decoding = 'async';
-    img.onload = img.onerror = () => resolve(src);
-    img.src = src;
-  });
-}
-
-async function preloadRemainingScenes(firstSceneId, concurrency = 2) {
-  const queue = scenes.filter((s) => s.id !== firstSceneId).map((s) => s.image);
-  let active = 0;
-  let i = 0;
-  return new Promise((done) => {
-    const next = () => {
-      if (i >= queue.length && active === 0) return done();
-      while (active < concurrency && i < queue.length) {
-        const src = queue[i++];
-        active++;
-        preloadImage(src).then(() => {
-          active--;
-          next();
-        });
-      }
-    };
-    next();
-  });
-}
-
 export default function PanoViewer({ currentSceneId }) {
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
@@ -112,29 +82,6 @@ export default function PanoViewer({ currentSceneId }) {
         scenes: sceneMap,
       });
 
-      const startPreload = () => {
-        if (cancelled) return;
-        console.log('[preload] starting background download of remaining scenes');
-        preloadRemainingScenes(currentSceneId).then(() =>
-          console.log('[preload] all scenes cached')
-        );
-      };
-      const scheduleIdle = () => {
-        if ('requestIdleCallback' in window) {
-          window.requestIdleCallback(startPreload, { timeout: 3000 });
-        } else {
-          setTimeout(startPreload, 1500);
-        }
-      };
-      let preloadStarted = false;
-      const fireOnce = () => {
-        if (preloadStarted) return;
-        preloadStarted = true;
-        scheduleIdle();
-      };
-      viewerRef.current.on('load', fireOnce);
-      // Safety net: if `load` already fired or never fires, kick off after 4s.
-      setTimeout(fireOnce, 4000);
 
       if (EDIT_MODE) {
         const onClick = (e) => {
