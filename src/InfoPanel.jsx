@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AudioButton from './AudioButton.jsx';
 
-export default function InfoPanel({ annotations = [], audioSrc, sceneId }) {
+export default function InfoPanel({ annotations = [], audioSrc, sceneId, panoReady }) {
   const [open, setOpen] = useState(false);
   const hasAny = annotations.length > 0;
 
@@ -33,7 +33,7 @@ export default function InfoPanel({ annotations = [], audioSrc, sceneId }) {
           </svg>
         )}
       </button>
-      <AudioButton src={audioSrc} />
+      <AudioButton src={audioSrc} ready={panoReady} />
       </div>
 
       {open && hasAny && (

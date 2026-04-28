@@ -8,6 +8,7 @@ import { scenes } from './scenes.js';
 export default function App() {
   const [currentSceneId, setCurrentSceneId] = useState(scenes[0].id);
   const [fsSupported, setFsSupported] = useState(false);
+  const [panoReady, setPanoReady] = useState(false);
   const current = scenes.find((s) => s.id === currentSceneId);
 
   useEffect(() => {
@@ -30,9 +31,9 @@ export default function App() {
 
   return (
     <div className="app">
-      <PanoViewer currentSceneId={currentSceneId} onSceneChange={setCurrentSceneId} />
+      <PanoViewer currentSceneId={currentSceneId} onSceneChange={setCurrentSceneId} onLoadingChange={(l) => setPanoReady(!l)} />
 
-      <InfoPanel annotations={current.annotations} audioSrc={current.audio} sceneId={current.id} />
+      <InfoPanel annotations={current.annotations} audioSrc={current.audio} sceneId={current.id} panoReady={panoReady} />
 
       <div className="title-chip">{current.title}</div>
 

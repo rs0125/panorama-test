@@ -30,7 +30,7 @@ function waitForPannellum() {
   });
 }
 
-export default function PanoViewer({ currentSceneId, onSceneChange }) {
+export default function PanoViewer({ currentSceneId, onSceneChange, onLoadingChange }) {
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
   const [loading, setLoading] = useState(true);
@@ -88,11 +88,13 @@ export default function PanoViewer({ currentSceneId, onSceneChange }) {
       viewerRef.current.on('scenechange', (sceneId) => {
         if (cancelled) return;
         setLoading(true);
+        onLoadingChange?.(true);
         onSceneChange?.(sceneId);
       });
       viewerRef.current.on('load', () => {
         if (cancelled) return;
         setLoading(false);
+        onLoadingChange?.(false);
       });
 
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export default function AudioButton({ src }) {
+export default function AudioButton({ src, ready }) {
   const audioRef = useRef(null);
   const [enabled, setEnabled] = useState(false);
   const [ended, setEnded] = useState(false);
@@ -17,7 +17,8 @@ export default function AudioButton({ src }) {
     };
   }, []);
 
-  // Source change → load new track from start. Auto-plays if user has enabled audio.
+  // Source change → load new track from start but DON'T auto-play yet.
+  // Playback is deferred until the pano image is ready.
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
@@ -29,11 +30,16 @@ export default function AudioButton({ src }) {
     }
     a.src = src;
     a.currentTime = 0;
-    if (enabled) {
-      a.play().catch(() => setEnabled(false));
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src]);
+
+  // Auto-play once the panorama image has loaded (ready becomes true).
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a || !src || !ready || !enabled) return;
+    a.play().catch(() => setEnabled(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready]);
 
   // Toggle enabled → play/pause from current position (do NOT reset).
   useEffect(() => {
