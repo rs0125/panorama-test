@@ -159,7 +159,6 @@ export default function PanoViewer({ currentSceneId, onSceneChange }) {
   return (
     <>
       <div ref={containerRef} className={`pano-container ${loading ? 'is-loading' : ''}`} />
-      <div className={`pano-loading ${loading ? 'is-visible' : ''}`} aria-hidden="true" />
       {EDIT_MODE && (
         <div className="edit-bar">
           <span className="edit-bar__label">Hotspot target →</span>

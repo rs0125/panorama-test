@@ -86,7 +86,13 @@ body { user-select: none; -webkit-user-select: none; }
   align-items: flex-start;
   max-height: calc(100dvh - 28px - var(--safe-top) - var(--safe-bottom));
 }
-.info__btn {
+.info__buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.info__btn,
+.audio-btn {
   width: 46px;
   height: 46px;
   border-radius: 16px;
@@ -104,9 +110,15 @@ body { user-select: none; -webkit-user-select: none; }
   transition: transform 0.15s ease, background 0.2s ease;
   flex-shrink: 0;
 }
-.info__btn:hover { background: var(--glass-bg-strong); }
-.info__btn:active { transform: scale(0.94); }
+.info__btn:hover,
+.audio-btn:hover { background: var(--glass-bg-strong); }
+.info__btn:active,
+.audio-btn:active { transform: scale(0.94); }
 .info__btn:disabled { opacity: 0.4; cursor: default; }
+.audio-btn[aria-pressed="true"] {
+  border-color: rgba(255, 138, 61, 0.55);
+  color: var(--accent);
+}
 
 .info__list {
   display: flex;
@@ -126,20 +138,22 @@ body { user-select: none; -webkit-user-select: none; }
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
   border-radius: 14px;
-  padding: 12px 14px;
+  padding: 11px 14px 12px;
   color: #fff;
   animation: infoCardIn 0.25s ease both;
 }
 .info__card-title {
   font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.005em;
+  color: var(--accent);
   margin-bottom: 4px;
 }
 .info__card-body {
-  font-size: 12px;
-  line-height: 1.45;
-  color: rgba(255, 255, 255, 0.78);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 400;
 }
 
 @keyframes infoCardIn {
@@ -351,7 +365,12 @@ body { user-select: none; -webkit-user-select: none; }
 /* Phones — portrait */
 @media (max-width: 600px) {
   .info { top: calc(10px + var(--safe-top)); left: calc(10px + var(--safe-left)); }
-  .info__btn { width: 40px; height: 40px; border-radius: 14px; }
+  .info__btn,
+  .audio-btn { width: 44px; height: 44px; border-radius: 15px; }
+  .info__list { width: 220px; gap: 6px; }
+  .info__card { padding: 9px 12px 10px; border-radius: 12px; }
+  .info__card-title { font-size: 12px; margin-bottom: 3px; }
+  .info__card-body { font-size: 12.5px; line-height: 1.45; }
   .info__list { width: 240px; }
 
   .minimap {
@@ -371,8 +390,8 @@ body { user-select: none; -webkit-user-select: none; }
     max-width: calc(100vw - 80px);
   }
   .fs-btn {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     font-size: 18px;
   }
   .next-btn {
@@ -423,7 +442,7 @@ body { user-select: none; -webkit-user-select: none; }
   transition: opacity 0.4s ease;
 }
 
-/* Subtle vignette + spinner over the preview */
+/* Subtle vignette over the preview while loading */
 .pano-container::after {
   content: '';
   position: absolute;
@@ -434,25 +453,6 @@ body { user-select: none; -webkit-user-select: none; }
   transition: opacity 0.3s ease;
 }
 .pano-container.is-loading::after { opacity: 1; }
-
-.pano-loading {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 36px;
-  height: 36px;
-  margin: -18px 0 0 -18px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-top-color: rgba(255, 255, 255, 0.85);
-  animation: panoSpin 0.9s linear infinite;
-  z-index: 4;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-.pano-loading.is-visible { opacity: 1; }
-@keyframes panoSpin { to { transform: rotate(360deg); } }
 
 /* Pannellum hotspot — blurry pill with the destination name; orange glow on hover */
 .pnlm-hotspot.hs,

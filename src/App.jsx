@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import PanoViewer from './PanoViewer.jsx';
 import Minimap from './Minimap.jsx';
 import InfoPanel from './InfoPanel.jsx';
+import AudioButton from './AudioButton.jsx';
 import { scenes } from './scenes.js';
 
 export default function App() {
@@ -31,7 +32,7 @@ export default function App() {
     <div className="app">
       <PanoViewer currentSceneId={currentSceneId} onSceneChange={setCurrentSceneId} />
 
-      <InfoPanel annotations={current.annotations} />
+      <InfoPanel annotations={current.annotations} audioSrc={current.audio} sceneId={current.id} />
 
       <div className="title-chip">{current.title}</div>
 
