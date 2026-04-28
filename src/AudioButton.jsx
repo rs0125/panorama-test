@@ -3,36 +3,86 @@ import { useEffect, useRef, useState } from 'react';
 export default function AudioButton({ src }) {
   const audioRef = useRef(null);
   const [enabled, setEnabled] = useState(false);
+  const [ended, setEnded] = useState(false);
 
   // Lazily create the audio element once.
   useEffect(() => {
-    audioRef.current = new Audio();
-    audioRef.current.preload = 'auto';
+    const a = new Audio();
+    a.preload = 'auto';
+    a.addEventListener('ended', () => setEnded(true));
+    audioRef.current = a;
     return () => {
-      audioRef.current?.pause();
+      a.pause();
       audioRef.current = null;
     };
   }, []);
 
-  // Whenever the source or enabled state changes, restart playback from 0.
+  // Source change → load new track from start. Auto-plays if user has enabled audio.
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
-    if (enabled && src) {
-      if (a.src !== window.location.origin + src && !a.src.endsWith(src)) {
-        a.src = src;
+    setEnded(false);
+    if (!src) {
+      a.pause();
+      a.removeAttribute('src');
+      return;
+    }
+    a.src = src;
+    a.currentTime = 0;
+    if (enabled) {
+      a.play().catch(() => setEnabled(false));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src]);
+
+  // Toggle enabled → play/pause from current position (do NOT reset).
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a || !src) return;
+    if (enabled) {
+      if (ended) {
+        a.currentTime = 0;
+        setEnded(false);
       }
-      a.currentTime = 0;
-      a.play().catch(() => {
-        // Autoplay blocked or src missing — flip back to muted state.
-        setEnabled(false);
-      });
+      a.play().catch(() => setEnabled(false));
     } else {
       a.pause();
     }
-  }, [enabled, src]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled]);
+
+  const replay = () => {
+    const a = audioRef.current;
+    if (!a || !src) return;
+    a.currentTime = 0;
+    setEnded(false);
+    setEnabled(true);
+    a.play().catch(() => setEnabled(false));
+  };
 
   if (!src) return null;
+
+  if (ended) {
+    return (
+      <button
+        type="button"
+        className="audio-btn audio-btn--replay"
+        onClick={replay}
+        aria-label="Replay audio"
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path
+            d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+        </svg>
+      </button>
+    );
+  }
 
   return (
     <button
@@ -44,10 +94,7 @@ export default function AudioButton({ src }) {
     >
       {enabled ? (
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-          <path
-            d="M4 9v6h4l5 4V5L8 9H4z"
-            fill="currentColor"
-          />
+          <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
           <path
             d="M16 8.5a4 4 0 0 1 0 7M18.5 6a7 7 0 0 1 0 12"
             stroke="currentColor"
@@ -58,10 +105,7 @@ export default function AudioButton({ src }) {
         </svg>
       ) : (
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-          <path
-            d="M4 9v6h4l5 4V5L8 9H4z"
-            fill="currentColor"
-          />
+          <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
           <path
             d="M17 9l5 6M22 9l-5 6"
             stroke="currentColor"

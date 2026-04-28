@@ -7,7 +7,7 @@ export const scenes = [
     hotspots: [
       { to: 'gate', pitch: -2.34, yaw: -170.05 },
     ],
-    audio: null, // e.g. '/audio/approach.mp3'
+    audio: '/audio/audio1.ogg',
     annotations: [
       { title: 'Location', body: '1 km from Attibele–Anekal highway (STRR).' },
       { title: 'Road width', body: '25 ft.' },
@@ -22,7 +22,7 @@ export const scenes = [
       { to: 'approach', pitch: 0.5, yaw: 179.14 },
       { to: 'way', pitch: -5.47, yaw: -41.23 },
     ],
-    audio: null, // e.g. '/audio/approach.mp3'
+    audio: '/audio/audio2.ogg',
     annotations: [
       { title: 'Gate width', body: '~30 ft.' },
       { title: 'Trailer access', body: 'Parallel inbound/outbound passage.' },
@@ -52,7 +52,7 @@ export const scenes = [
       { to: 'way', pitch: -1.31, yaw: -13.82 },
       { to: 'interior', pitch: 0.43, yaw: -119.13 },
     ],
-    audio: null, // e.g. '/audio/approach.mp3'
+    audio: '/audio/audio3.ogg',
     annotations: [
       { title: 'Driveway', body: '8 m / 26 ft, wraps the box.' },
       { title: 'Dock apron', body: '9 m east (here) · 18 m west.' },
@@ -68,7 +68,7 @@ export const scenes = [
       { to: 'entry', pitch: -2.39, yaw: -174.59 },
       { to: 'restroom', pitch: -4.49, yaw: -52.85 },
     ],
-    audio: null, // e.g. '/audio/approach.mp3'
+    audio: '/audio/audio4.ogg',
     annotations: [
       { title: 'Flooring', body: 'FM2 compliant · 8 t/sqm load.' },
       { title: 'Heights', body: 'Eaves 12.5 m · centre 14.5 m. Wide-span grid.' },
