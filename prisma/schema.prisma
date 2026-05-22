@@ -1,0 +1,141 @@
+// Wareongo panoramic CMS schema.
+//
+// IMPORTANT: this Supabase project is shared with other apps (warehouse-bot,
+// ticketing, etc.) whose tables live in `public`. To avoid trampling them,
+// the CMS lives in its own Postgres schema `panos`. Prisma's `multiSchema`
+// preview keeps the client scoped to that schema — `db push` will never touch
+// anything in `public`.
+//
+// Naming:
+//   - Tour.slug   → used in URLs (/tour/<slug>); user-friendly, editable on creation
+//   - Scene.slug  → unique within a tour; used as the Pannellum scene key
+//   - All ids are cuids; foreign keys reference ids, not slugs, so renames are cheap.
+//
+// All image/audio URLs point at Cloudflare R2 (uploaded via /api/upload).
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Runtime queries — transaction pooler (port 6543), high client cap.
+  url       = env("DATABASE_URL")
+  // Migrations — session pooler (port 5432), supports prepared statements.
+  directUrl = env("DIRECT_URL")
+  schemas   = ["panos"]
+}
+
+model Tour {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String?
+  location    String?
+  coverUrl    String?
+
+  // Per-tour floorplan rendered inside the minimap.
+  //
+  // Crop rectangle is normalised 0..1 over the source floorplan image and
+  // also defines the minimap's aspect ratio (w / h). When unset, the whole
+  // image is shown (effectively x=0, y=0, w=1, h=1).
+  floorplanUrl   String?
+  floorplanCropX Float?
+  floorplanCropY Float?
+  floorplanCropW Float?
+  floorplanCropH Float?
+
+  scenes Scene[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("panos")
+}
+
+model Scene {
+  id         String  @id @default(cuid())
+  slug       String
+  title      String
+  imageUrl   String
+  previewUrl String?
+  audioUrl   String?
+
+  // Minimap dot position, normalised 0..1 across the floorplan crop.
+  minimapX Float
+  minimapY Float
+
+  // Order within the tour (drives "Next" button and admin reorder).
+  orderIndex Int @default(0)
+
+  tour   Tour   @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  tourId String
+
+  annotations      Annotation[]
+  hotspotsFrom     Hotspot[]    @relation("HotspotFromScene")
+  hotspotsIncoming Hotspot[]    @relation("HotspotToScene")
+  overlays         Overlay[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tourId, slug])
+  @@index([tourId])
+  @@schema("panos")
+}
+
+// Caption card shown in the side info panel.
+model Annotation {
+  id    String  @id @default(cuid())
+  title String?
+  body  String?
+
+  orderIndex Int @default(0)
+
+  scene   Scene  @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  sceneId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sceneId])
+  @@schema("panos")
+}
+
+// Clickable link from one scene to another at a specific pano coordinate.
+model Hotspot {
+  id    String @id @default(cuid())
+  pitch Float
+  yaw   Float
+
+  fromScene   Scene  @relation("HotspotFromScene", fields: [fromSceneId], references: [id], onDelete: Cascade)
+  fromSceneId String
+  toScene     Scene  @relation("HotspotToScene", fields: [toSceneId], references: [id], onDelete: Cascade)
+  toSceneId   String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fromSceneId])
+  @@index([toSceneId])
+  @@schema("panos")
+}
+
+// Free-floating pin painted on top of a pano (no navigation, just info).
+model Overlay {
+  id    String  @id @default(cuid())
+  pitch Float
+  yaw   Float
+  title String?
+  body  String?
+
+  scene   Scene  @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  sceneId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sceneId])
+  @@schema("panos")
+}
