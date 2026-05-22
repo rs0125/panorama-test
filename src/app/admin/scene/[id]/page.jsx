@@ -56,11 +56,6 @@ export default async function AdminScenePage({ params }) {
           <p className="admin__subtitle">/{scene.tour.slug}/{scene.slug}</p>
         </header>
 
-        <SceneNavMinimap
-          tour={scene.tour}
-          scenes={scene.tour.scenes}
-          currentSceneId={scene.id}
-        />
         <SceneFormAdmin initialScene={scene} siblings={siblings} />
         <HotspotEditor scene={scene} siblings={siblings} initialHotspots={scene.hotspotsFrom} />
         <AnnotationListAdmin sceneId={scene.id} initialAnnotations={scene.annotations} />
