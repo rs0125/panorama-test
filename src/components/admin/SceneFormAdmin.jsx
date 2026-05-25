@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/apiClient.js';
+import { slugify } from '@/lib/http.js';
 import UploadField from './UploadField.jsx';
 import MinimapPicker from './MinimapPicker.jsx';
 
@@ -27,6 +28,14 @@ export default function SceneFormAdmin({ initialScene, siblings = [] }) {
   const [error, setError] = useState(null);
 
   const setField = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
+
+  // Pre-flight slug check — matches the server's normalisation (slugify) +
+  // unique-per-tour constraint (@@unique([tourId, slug])). Ignores the
+  // current scene's own slug so the admin can save without changes.
+  const normalisedSlug = slugify(form.slug);
+  const slugEmpty = normalisedSlug.length === 0;
+  const slugTaken =
+    !slugEmpty && siblings.some((s) => s.slug === normalisedSlug);
 
   const onSave = async (e) => {
     e.preventDefault();
@@ -73,10 +82,20 @@ export default function SceneFormAdmin({ initialScene, siblings = [] }) {
         <label className="field">
           <span className="field__label">Slug</span>
           <input
-            className="field__input"
+            className={`field__input ${slugTaken || slugEmpty ? 'field__input--invalid' : ''}`}
             value={form.slug}
             onChange={(e) => setField('slug')(e.target.value)}
+            aria-invalid={slugTaken || slugEmpty}
           />
+          {slugEmpty ? (
+            <span className="field__hint field__hint--error">Slug can't be empty.</span>
+          ) : slugTaken ? (
+            <span className="field__hint field__hint--error">
+              Another scene in this tour already uses /{normalisedSlug}.
+            </span>
+          ) : normalisedSlug !== form.slug ? (
+            <span className="field__hint">Will be saved as /{normalisedSlug}.</span>
+          ) : null}
         </label>
       </div>
 
@@ -118,7 +137,11 @@ export default function SceneFormAdmin({ initialScene, siblings = [] }) {
       {error && <div className="admin__error">{error}</div>}
 
       <div className="admin__form-actions">
-        <button type="submit" className="btn btn--primary" disabled={status === 'saving'}>
+        <button
+          type="submit"
+          className="btn btn--primary"
+          disabled={status === 'saving' || slugTaken || slugEmpty}
+        >
           {status === 'saving' ? 'Saving…' : status === 'saved' ? 'Saved' : 'Save changes'}
         </button>
       </div>

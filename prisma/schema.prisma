@@ -69,6 +69,15 @@ model Scene {
   // Order within the tour (drives "Next" button and admin reorder).
   orderIndex Int @default(0)
 
+  // Initial view applied by Pannellum when this scene first loads.
+  // All nullable — leave unset to use Pannellum / tour defaults.
+  //   initialPitch: -90 (down) .. 90 (up)
+  //   initialYaw:   -180 .. 180 (0 = "centre" of equirectangular)
+  //   initialHfov:  20 (zoomed in) .. 120 (wide)
+  initialPitch Float?
+  initialYaw   Float?
+  initialHfov  Float?
+
   tour   Tour   @relation(fields: [tourId], references: [id], onDelete: Cascade)
   tourId String
 
@@ -122,11 +131,26 @@ model Hotspot {
   @@schema("panos")
 }
 
-// Free-floating pin painted on top of a pano (no navigation, just info).
+// Free-floating annotations painted on top of a pano.
+//
+// type = 'text' → a label anchored at (pitch, yaw). title/body render in the
+//                  label card.
+// type = 'line' → a dimension-style line connecting (pitch, yaw) to
+//                  (pitch2, yaw2). The label centred on the line uses `label`
+//                  (e.g. "15m"). Double arrowheads are added in the viewer.
+//
+// title/body kept for back-compat with text-type rows; new text overlays can
+// also use `label` if you want a single short string.
 model Overlay {
-  id    String  @id @default(cuid())
+  id    String @id @default(cuid())
+  type  String @default("text") // 'text' | 'line'
   pitch Float
   yaw   Float
+  // Second endpoint, used only when type = 'line'.
+  pitch2 Float?
+  yaw2   Float?
+  // Short label for line-type (e.g. "15m"). Text-type can use title/body.
+  label String?
   title String?
   body  String?
 

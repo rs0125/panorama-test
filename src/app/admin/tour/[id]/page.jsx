@@ -4,6 +4,7 @@ import PageShell from '@/components/PageShell.jsx';
 import TourFormAdmin from '@/components/admin/TourFormAdmin.jsx';
 import TourMinimapEditor from '@/components/admin/TourMinimapEditor.jsx';
 import SceneListAdmin from '@/components/admin/SceneListAdmin.jsx';
+import EmbedPanel from '@/components/admin/EmbedPanel.jsx';
 import { prisma } from '@/lib/db.js';
 
 export const dynamic = 'force-dynamic';
@@ -15,7 +16,7 @@ export default async function AdminTourPage({ params }) {
     include: {
       scenes: {
         orderBy: { orderIndex: 'asc' },
-        include: { _count: { select: { annotations: true } } },
+        include: { _count: { select: { annotations: true, hotspotsFrom: true } } },
       },
     },
   });
@@ -37,6 +38,7 @@ export default async function AdminTourPage({ params }) {
         <TourFormAdmin initialTour={tour} />
         <TourMinimapEditor tour={tour} scenes={tour.scenes} />
         <SceneListAdmin tourId={tour.id} initialScenes={tour.scenes} />
+        <EmbedPanel tourSlug={tour.slug} />
       </div>
     </PageShell>
   );

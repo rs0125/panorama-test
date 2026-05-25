@@ -2,12 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import PanoViewer from './PanoViewer.jsx';
 import Minimap from './Minimap.jsx';
 import InfoPanel from './InfoPanel.jsx';
 
 export default function TourView({ tour }) {
   const scenes = tour.scenes;
+  const searchParams = useSearchParams();
+  // ?embed=1 — strip chrome that doesn't make sense inside someone else's
+  // page (back-to-host link). Keep pano + minimap + audio + next + fullscreen
+  // because those are the actual product inside the iframe.
+  const isEmbed = searchParams?.get('embed') === '1';
   const [currentSceneId, setCurrentSceneId] = useState(scenes[0].id);
   const [fsSupported, setFsSupported] = useState(false);
   const [panoReady, setPanoReady] = useState(false);
@@ -52,18 +58,20 @@ export default function TourView({ tour }) {
         panoReady={panoReady}
       />
 
-      <Link href="/" className="back-btn" aria-label="Back to tours">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-          <path
-            d="M15 6l-6 6 6 6"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-          />
-        </svg>
-      </Link>
+      {!isEmbed && (
+        <Link href="/" className="back-btn" aria-label="Back to tours">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path
+              d="M15 6l-6 6 6 6"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+          </svg>
+        </Link>
+      )}
 
       <div className="title-chip">{current.title}</div>
 

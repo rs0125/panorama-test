@@ -4,6 +4,7 @@ import PageShell from '@/components/PageShell.jsx';
 import SceneFormAdmin from '@/components/admin/SceneFormAdmin.jsx';
 import AnnotationListAdmin from '@/components/admin/AnnotationListAdmin.jsx';
 import HotspotEditor from '@/components/admin/HotspotEditor.jsx';
+import OverlayEditor from '@/components/admin/OverlayEditor.jsx';
 import { prisma } from '@/lib/db.js';
 
 export const dynamic = 'force-dynamic';
@@ -19,6 +20,7 @@ export default async function AdminScenePage({ params }) {
     include: {
       annotations: { orderBy: { orderIndex: 'asc' } },
       hotspotsFrom: { select: { id: true, pitch: true, yaw: true, toSceneId: true } },
+      overlays: { orderBy: { createdAt: 'asc' } },
       tour: {
         select: {
           id: true,
@@ -58,6 +60,11 @@ export default async function AdminScenePage({ params }) {
 
         <SceneFormAdmin initialScene={scene} siblings={siblings} />
         <HotspotEditor scene={scene} siblings={siblings} initialHotspots={scene.hotspotsFrom} />
+        <OverlayEditor
+          sceneId={scene.id}
+          imageUrl={scene.imageUrl}
+          initialOverlays={scene.overlays}
+        />
         <AnnotationListAdmin sceneId={scene.id} initialAnnotations={scene.annotations} />
       </div>
     </PageShell>

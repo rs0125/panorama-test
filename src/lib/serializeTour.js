@@ -19,6 +19,11 @@ export function serializeTour(tour) {
       preview: s.previewUrl || null,
       audio: s.audioUrl || null,
       minimap: { x: s.minimapX, y: s.minimapY },
+      initialView: {
+        pitch: s.initialPitch ?? null,
+        yaw: s.initialYaw ?? null,
+        hfov: s.initialHfov ?? null,
+      },
       annotations: [...(s.annotations || [])]
         .sort((a, b) => a.orderIndex - b.orderIndex)
         .map((a) => ({ title: a.title, body: a.body })),
@@ -30,10 +35,15 @@ export function serializeTour(tour) {
         }))
         .filter((h) => Boolean(h.to)),
       overlays: (s.overlays || []).map((o) => ({
+        id: o.id,
+        type: o.type || 'text',
         pitch: o.pitch,
         yaw: o.yaw,
-        title: o.title,
-        body: o.body,
+        pitch2: o.pitch2 ?? null,
+        yaw2: o.yaw2 ?? null,
+        label: o.label || null,
+        title: o.title || null,
+        body: o.body || null,
       })),
     }));
 

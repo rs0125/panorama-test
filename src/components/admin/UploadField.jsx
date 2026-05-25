@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { uploadFileToR2 } from '@/lib/uploadClient.js';
+import TtsPanel from './TtsPanel.jsx';
 
 // Generic single-file upload field. Calls onUploaded(url) when the file has
 // finished landing in R2; the parent decides what DB field to write it to.
@@ -22,6 +23,7 @@ export default function UploadField({
   const inputRef = useRef(null);
   const [progress, setProgress] = useState(null);
   const [error, setError] = useState(null);
+  const [showTts, setShowTts] = useState(false);
 
   const pick = () => inputRef.current?.click();
 
@@ -57,6 +59,17 @@ export default function UploadField({
           >
             {value ? 'Replace' : 'Upload'}
           </button>
+          {isAudio && (
+            <button
+              type="button"
+              className={`btn btn--ghost ${showTts ? 'btn--active' : ''}`}
+              onClick={() => setShowTts((v) => !v)}
+              disabled={disabled || progress != null}
+              aria-expanded={showTts}
+            >
+              {showTts ? 'Hide TTS' : 'Generate (TTS)'}
+            </button>
+          )}
           {value && onClear && (
             <button
               type="button"
@@ -77,6 +90,16 @@ export default function UploadField({
         </div>
       )}
       {error && <div className="upload__error">{error}</div>}
+
+      {isAudio && showTts && (
+        <TtsPanel
+          disabled={disabled || progress != null}
+          onGenerated={(url) => {
+            onUploaded(url);
+            setShowTts(false);
+          }}
+        />
+      )}
 
       {value && !progress && (
         <div className="upload__preview">

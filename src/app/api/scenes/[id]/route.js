@@ -8,6 +8,9 @@ const SCENE_PATCH_FIELDS = [
   'minimapX',
   'minimapY',
   'orderIndex',
+  'initialPitch',
+  'initialYaw',
+  'initialHfov',
 ];
 
 export async function GET(_req, { params }) {

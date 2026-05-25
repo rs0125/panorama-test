@@ -96,7 +96,7 @@ export default function SceneListAdmin({ tourId, initialScenes }) {
           imageUrl,
         });
         updateRow(row.key, { status: 'done', sceneId: scene.id });
-        setScenes((s) => [...s, { ...scene, _count: { annotations: 0 } }]);
+        setScenes((s) => [...s, { ...scene, _count: { annotations: 0, hotspotsFrom: 0 } }]);
       } catch (err) {
         updateRow(row.key, { status: 'failed', error: err.message });
       }
@@ -320,7 +320,7 @@ export default function SceneListAdmin({ tourId, initialScenes }) {
                     {s.title}
                   </Link>
                   <div className="admin__list-meta">
-                    /{s.slug} · {s._count?.annotations ?? 0} captions{s.audioUrl ? ' · audio' : ''}
+                    /{s.slug} · {s._count?.annotations ?? 0} captions · {s._count?.hotspotsFrom ?? 0} hotspots{s.audioUrl ? ' · audio' : ''}
                   </div>
                 </div>
                 <div className="admin__list-actions">

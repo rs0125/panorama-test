@@ -62,6 +62,11 @@ export const api = {
   bulkHotspots: (sceneId, body) =>
     request(`/api/scenes/${sceneId}/hotspots/bulk`, { method: 'POST', body }),
 
+  // ElevenLabs TTS (admin only)
+  ttsVoices: () => request('/api/tts/voices'),
+  ttsModels: () => request('/api/tts/models'),
+  ttsGenerate: (body) => request('/api/tts/generate', { method: 'POST', body }),
+
   // Overlays (admin UI coming later)
   createOverlay: (sceneId, body) =>
     request(`/api/scenes/${sceneId}/overlays`, { method: 'POST', body }),

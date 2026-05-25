@@ -65,6 +65,7 @@ function buildPin(div, args) {
 }
 
 const round = (v) => Math.round(v * 100) / 100;
+const fmtAngle = (v) => (v == null ? '—' : `${Number(v).toFixed(1)}°`);
 
 export default function HotspotEditor({ scene, siblings, initialHotspots }) {
   const containerRef = useRef(null);
@@ -89,6 +90,67 @@ export default function HotspotEditor({ scene, siblings, initialHotspots }) {
   const [addTarget, setAddTarget] = useState(siblings[0]?.id || '');
   const [saveError, setSaveError] = useState(null);
   const [saving, setSaving] = useState(false);
+
+  // Initial-view state lives here (rather than SceneFormAdmin) because we
+  // already have a live Pannellum viewer to read pitch/yaw/hfov from. PATCHes
+  // straight to /api/scenes/[id]; not bundled with hotspot save.
+  const [initialView, setInitialView] = useState({
+    pitch: scene.initialPitch ?? null,
+    yaw: scene.initialYaw ?? null,
+    hfov: scene.initialHfov ?? null,
+  });
+  const [ivSaving, setIvSaving] = useState(false);
+  const [ivError, setIvError] = useState(null);
+  const [ivStatus, setIvStatus] = useState(null); // 'saved' | null
+
+  const captureInitialView = async () => {
+    const v = viewerRef.current;
+    if (!v) return;
+    let next;
+    try {
+      next = {
+        pitch: round(v.getPitch()),
+        yaw: round(v.getYaw()),
+        hfov: round(v.getHfov()),
+      };
+    } catch {
+      setIvError('Viewer not ready yet.');
+      return;
+    }
+    setIvSaving(true);
+    setIvError(null);
+    try {
+      await api.updateScene(scene.id, {
+        initialPitch: next.pitch,
+        initialYaw: next.yaw,
+        initialHfov: next.hfov,
+      });
+      setInitialView(next);
+      setIvStatus('saved');
+      setTimeout(() => setIvStatus(null), 1500);
+    } catch (err) {
+      setIvError(err.message);
+    } finally {
+      setIvSaving(false);
+    }
+  };
+
+  const resetInitialView = async () => {
+    setIvSaving(true);
+    setIvError(null);
+    try {
+      await api.updateScene(scene.id, { initialPitch: null, initialYaw: null, initialHfov: null });
+      setInitialView({ pitch: null, yaw: null, hfov: null });
+      setIvStatus('saved');
+      setTimeout(() => setIvStatus(null), 1500);
+    } catch (err) {
+      setIvError(err.message);
+    } finally {
+      setIvSaving(false);
+    }
+  };
+
+  const ivIsSet = initialView.pitch != null || initialView.yaw != null || initialView.hfov != null;
   // Toggled true after Pannellum finishes loading. The items-sync effect
   // depends on this so the initial pins get rendered once the viewer exists.
   const [viewerReady, setViewerReady] = useState(false);
@@ -310,16 +372,7 @@ export default function HotspotEditor({ scene, siblings, initialHotspots }) {
     setSaveError(null);
   };
 
-  if (siblings.length === 0) {
-    return (
-      <div className="admin__panel">
-        <h2 className="admin__panel-title">Hotspots</h2>
-        <div className="admin__empty">
-          Hotspots link a scene to another scene. Add a second scene to this tour to enable them.
-        </div>
-      </div>
-    );
-  }
+  const noSiblings = siblings.length === 0;
 
   return (
     <div className="admin__panel">
@@ -327,7 +380,13 @@ export default function HotspotEditor({ scene, siblings, initialHotspots }) {
         <h2 className="admin__panel-title">Hotspots</h2>
         <div className="admin__list-actions">
           {mode === 'view' ? (
-            <button type="button" className="btn btn--ghost" onClick={() => setMode('edit')}>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={() => setMode('edit')}
+              disabled={noSiblings}
+              title={noSiblings ? 'Add a second scene to this tour to enable hotspots.' : ''}
+            >
               Edit hotspots
             </button>
           ) : (
@@ -374,6 +433,42 @@ export default function HotspotEditor({ scene, siblings, initialHotspots }) {
       )}
 
       {saveError && <div className="admin__error">{saveError}</div>}
+
+      <div className="initial-view">
+        <div className="initial-view__label">
+          <strong>Initial view</strong>
+          {ivIsSet ? (
+            <span className="picker__hint">
+              pitch {fmtAngle(initialView.pitch)} · yaw {fmtAngle(initialView.yaw)} · hfov {fmtAngle(initialView.hfov)}
+            </span>
+          ) : (
+            <span className="picker__hint">Not set — uses tour default.</span>
+          )}
+        </div>
+        <div className="initial-view__actions">
+          {ivStatus === 'saved' && <span className="picker__hint">Saved ✓</span>}
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={captureInitialView}
+            disabled={!viewerReady || ivSaving}
+            title="Pan/zoom the pano below, then click here to lock that view as the entry point."
+          >
+            {ivSaving ? 'Saving…' : 'Use current view'}
+          </button>
+          {ivIsSet && (
+            <button
+              type="button"
+              className="btn btn--ghost btn--danger"
+              onClick={resetInitialView}
+              disabled={ivSaving}
+            >
+              Reset
+            </button>
+          )}
+        </div>
+      </div>
+      {ivError && <div className="admin__error">{ivError}</div>}
 
       <div className={`hs-edit-stage ${mode === 'edit' ? 'is-editing' : ''} ${addArmed ? 'is-arming' : ''}`}>
         <div ref={containerRef} className="hs-edit-pano" />
