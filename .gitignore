@@ -4,6 +4,7 @@ dist
 out
 .DS_Store
 *.log
+.env
 .env*.local
 next-env.d.ts
 AUDIT.md
