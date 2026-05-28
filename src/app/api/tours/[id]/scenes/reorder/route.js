@@ -34,7 +34,7 @@ export const POST = withApi(async (req, { params }) => {
   // updates wrapped in $transaction.
   const rows = order.map((sceneId, idx) => Prisma.sql`(${sceneId}, ${idx}::int)`);
   await prisma.$executeRaw`
-    UPDATE "Scene" AS s
+    UPDATE panos."Scene" AS s
     SET "orderIndex" = v.idx
     FROM (VALUES ${Prisma.join(rows)}) AS v(id, idx)
     WHERE s.id = v.id

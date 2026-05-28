@@ -47,7 +47,7 @@ export const POST = withApi(async (req, { params }) => {
     (p) => Prisma.sql`(${p.id}, ${p.minimapX}::float8, ${p.minimapY}::float8)`
   );
   await prisma.$executeRaw`
-    UPDATE "Scene" AS s
+    UPDATE panos."Scene" AS s
     SET "minimapX" = v.x, "minimapY" = v.y
     FROM (VALUES ${Prisma.join(rows)}) AS v(id, x, y)
     WHERE s.id = v.id
