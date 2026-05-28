@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { clamp, round } from '@/lib/num.js';
 
 // Visual crop editor for the tour floorplan.
 //
@@ -40,6 +41,12 @@ export default function FloorplanCropEditor({ imageUrl, value, onChange }) {
   // Keep local rect in sync if parent resets it (e.g. after a save / reload).
   useEffect(() => { setRect(normalise(value)); }, [value?.x, value?.y, value?.w, value?.h]);
 
+  // Mirror rect into a ref so the drag-end handler can commit the latest
+  // value without putting a side-effect (onChange) inside a setState updater —
+  // updaters can run twice in StrictMode and would fire onChange twice.
+  const rectRef = useRef(rect);
+  useEffect(() => { rectRef.current = rect; }, [rect]);
+
   // Read natural image dimensions to size the stage. Without this we'd be
   // guessing at the aspect, and the crop rect would float in letterboxing.
   useEffect(() => {
@@ -63,13 +70,13 @@ export default function FloorplanCropEditor({ imageUrl, value, onChange }) {
       const p = e.touches ? e.touches[0] : e;
       const dx = (p.clientX - drag.startX) / rectBox.width;
       const dy = (p.clientY - drag.startY) / rectBox.height;
-      setRect((r) => applyDrag(drag, dx, dy));
+      setRect(applyDrag(drag, dx, dy));
     };
     const end = () => {
       setDrag(null);
       // Commit on drop. Bubbling up only at end means the parent's
       // "dirty" check only flips once per gesture, not per pixel.
-      setRect((r) => { onChange?.(r); return r; });
+      onChange?.(rectRef.current);
     };
     window.addEventListener('mousemove', move);
     window.addEventListener('mouseup', end);
@@ -224,5 +231,3 @@ function clampRect(r) {
   };
 }
 
-function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
-function round(v) { return Math.round(v * 1000) / 1000; }

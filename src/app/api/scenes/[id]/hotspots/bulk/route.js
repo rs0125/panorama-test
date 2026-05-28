@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db.js';
-import { jsonError, readJson } from '@/lib/http.js';
+import { jsonError, readJson, withApi } from '@/lib/http.js';
 
 // Apply a full set of hotspot edits for one scene in a single transaction.
 //
@@ -17,7 +17,7 @@ import { jsonError, readJson } from '@/lib/http.js';
 //   - Every toSceneId (create or update) must live in the same tour.
 // One transaction so a partial failure doesn't leave the scene in a torn state.
 
-export async function POST(req, { params }) {
+export const POST = withApi(async (req, { params }) => {
   const { id } = await params;
   const body = await readJson(req);
   if (!body) return jsonError('invalid JSON');
@@ -109,4 +109,4 @@ export async function POST(req, { params }) {
     select: { id: true, pitch: true, yaw: true, toSceneId: true },
   });
   return Response.json(fresh);
-}
+});

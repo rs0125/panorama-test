@@ -16,10 +16,14 @@
 // The layer is refreshed every animation frame by the caller (PanoViewer or
 // OverlayEditor's rAF tick) which passes the current view state in opts.
 
+const TEXT_HANDLE_POSITIONS = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+
 function buildOverlayText(div, args) {
   div.classList.add('ovl-text');
   const card = document.createElement('div');
   card.className = 'ovl-text__card';
+  if (args.editable) card.classList.add('ovl-text__card--editable');
+  if (args.overlayId) card.dataset.overlayId = args.overlayId;
   if (args.title) {
     const t = document.createElement('div');
     t.className = 'ovl-text__title';
@@ -38,12 +42,41 @@ function buildOverlayText(div, args) {
     l.textContent = args.label;
     card.appendChild(l);
   }
+  // Apply persisted uniform scale via inline transform (overrides the CSS
+  // default `translate(-50%, -50%)`). Scale 1 leaves the CSS rule alone so we
+  // don't pay the inline-style write on every public viewer hotspot.
+  const scale = args.scale ?? 1;
+  if (scale !== 1) {
+    card.style.transform = `translate(-50%, -50%) scale(${scale})`;
+  }
+  // Explicit box dimensions override the CSS max-width default. Null fields
+  // fall through to auto-sizing. Both are logical (pre-scale) pixels.
+  if (args.boxWidth != null) {
+    card.style.width = `${args.boxWidth}px`;
+    card.style.maxWidth = `${args.boxWidth}px`;
+  }
+  if (args.boxHeight != null) {
+    card.style.height = `${args.boxHeight}px`;
+    card.style.overflow = 'hidden';
+  }
+  if (args.editable) {
+    TEXT_HANDLE_POSITIONS.forEach((pos) => {
+      const h = document.createElement('span');
+      h.className = `ovl-text__handle ovl-text__handle--${pos}`;
+      h.dataset.handle = pos;
+      if (args.overlayId) h.dataset.overlayId = args.overlayId;
+      card.appendChild(h);
+    });
+  }
   div.appendChild(card);
 }
 
 // Line overlays no longer get Pannellum hotspots — we project them ourselves
 // in the line layer. Only text overlays get Pannellum hotspots.
-export function overlayHotspots(overlays) {
+//
+// opts.editable=true marks the card draggable + adds 8 resize handles. The
+// admin uses event delegation on the pano container to wire drag/resize.
+export function overlayHotspots(overlays, opts = {}) {
   const out = [];
   (overlays || []).forEach((o) => {
     if (o.type === 'line') return; // handled by the line layer
@@ -54,7 +87,16 @@ export function overlayHotspots(overlays) {
       type: 'info',
       cssClass: 'ovl-text',
       createTooltipFunc: buildOverlayText,
-      createTooltipArgs: { title: o.title, body: o.body, label: o.label },
+      createTooltipArgs: {
+        title: o.title,
+        body: o.body,
+        label: o.label,
+        scale: o.scale ?? 1,
+        boxWidth: o.boxWidth ?? null,
+        boxHeight: o.boxHeight ?? null,
+        editable: !!opts.editable,
+        overlayId: o.id,
+      },
     });
   });
   return out;
@@ -199,8 +241,10 @@ export function drawLineOverlays(container, lineOverlays, opts = {}) {
     // Both endpoints must clear the near plane. If either is behind the
     // camera the line would be visually meaningless — drop it.
     if (!a.visible || !b.visible) return;
-    drawEndpointDot(layer, a.x, a.y);
-    drawEndpointDot(layer, b.x, b.y);
+    const interactiveA = opts.interactive ? { overlayId: o.id, endpoint: 1 } : null;
+    const interactiveB = opts.interactive ? { overlayId: o.id, endpoint: 2 } : null;
+    drawEndpointDot(layer, a.x, a.y, interactiveA);
+    drawEndpointDot(layer, b.x, b.y, interactiveB);
     drawLineBar(layer, a.x, a.y, b.x, b.y, o.label);
   });
 
@@ -219,21 +263,30 @@ export function drawLineOverlays(container, lineOverlays, opts = {}) {
   }
 }
 
-function drawEndpointDot(layer, x, y) {
+function drawEndpointDot(layer, x, y, interactive) {
   const dot = document.createElement('div');
   dot.className = 'pano-line__dot';
+  if (interactive) {
+    dot.dataset.overlayId = interactive.overlayId;
+    dot.dataset.endpoint = String(interactive.endpoint);
+  }
+  // Endpoint hit-targets bump from 12 → 16px when interactive so the cursor
+  // can land on them at typical drag speeds. Non-interactive (public viewer)
+  // keeps the smaller, less-busy size.
+  const size = interactive ? 16 : 12;
   dot.style.cssText = `
     position:absolute;
     left:${x}px;
     top:${y}px;
-    width:12px;
-    height:12px;
+    width:${size}px;
+    height:${size}px;
     background:#ffae5c;
     border:2px solid #fff;
     border-radius:50%;
     transform:translate(-50%, -50%);
     box-shadow:0 0 0 1px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.45);
-    pointer-events:none;
+    pointer-events:${interactive ? 'auto' : 'none'};
+    ${interactive ? 'cursor:grab;' : ''}
   `;
   layer.appendChild(dot);
 }

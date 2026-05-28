@@ -14,13 +14,12 @@ export default function TourView({ tour }) {
   // page (back-to-host link). Keep pano + minimap + audio + next + fullscreen
   // because those are the actual product inside the iframe.
   const isEmbed = searchParams?.get('embed') === '1';
-  const [currentSceneId, setCurrentSceneId] = useState(scenes[0].id);
+  const [currentSceneId, setCurrentSceneId] = useState(scenes[0]?.id);
   const [fsSupported, setFsSupported] = useState(false);
   const [panoReady, setPanoReady] = useState(false);
-  const current = scenes.find((s) => s.id === currentSceneId) || scenes[0];
 
   useEffect(() => {
-    setCurrentSceneId(scenes[0].id);
+    setCurrentSceneId(scenes[0]?.id);
     setPanoReady(false);
   }, [tour.id]);
 
@@ -39,6 +38,29 @@ export default function TourView({ tour }) {
     }
   };
 
+  if (!scenes.length) {
+    return (
+      <div className="app">
+        <div className="title-chip">This tour has no scenes yet.</div>
+        {!isEmbed && (
+          <Link href="/" className="back-btn" aria-label="Back to tours">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path
+                d="M15 6l-6 6 6 6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+            </svg>
+          </Link>
+        )}
+      </div>
+    );
+  }
+
+  const current = scenes.find((s) => s.id === currentSceneId) || scenes[0];
   const idx = scenes.findIndex((s) => s.id === currentSceneId);
   const next = scenes[(idx + 1) % scenes.length];
 

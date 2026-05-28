@@ -105,7 +105,6 @@ export default function EmbedPanel({ tourSlug }) {
         <div className="embed-preview">
           <span className="picker__hint">Preview</span>
           <iframe
-            key={url + width + height}
             src={url}
             width="100%"
             height={Math.min(Number(height) || 600, 500)}

@@ -2,6 +2,7 @@
 
 import { useRef } from 'react';
 import Floorplan, { cropAspect } from '@/components/Floorplan.jsx';
+import { clamp01, round } from '@/lib/num.js';
 
 // Click-anywhere picker for a scene's minimap position.
 //
@@ -78,5 +79,3 @@ function CoordBadge({ value }) {
   );
 }
 
-function clamp01(v) { return Math.max(0, Math.min(1, v)); }
-function round(v) { return Math.round(v * 1000) / 1000; }

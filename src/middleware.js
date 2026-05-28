@@ -8,9 +8,28 @@ import { auth } from '@/auth';
 // /api/auth/* is intentionally excluded from the matcher — Auth.js needs those
 // to remain reachable for the sign-in / callback dance itself.
 export default auth((req) => {
-  if (req.auth) return NextResponse.next();
-
   const path = req.nextUrl.pathname;
+
+  if (req.auth) {
+    // Defence-in-depth CSRF check for /api/* mutating routes. NextAuth's
+    // SameSite=Lax cookie already blocks most cross-origin POSTs, but PATCH/
+    // DELETE have no equivalent default — verify Origin matches the request
+    // host before letting an authenticated session change state.
+    if (path.startsWith('/api/') && req.method !== 'GET' && req.method !== 'HEAD') {
+      const origin = req.headers.get('origin');
+      if (origin) {
+        try {
+          if (new URL(origin).host !== req.nextUrl.host) {
+            return Response.json({ error: 'cross-origin request rejected' }, { status: 403 });
+          }
+        } catch {
+          return Response.json({ error: 'invalid origin' }, { status: 400 });
+        }
+      }
+    }
+    return NextResponse.next();
+  }
+
   if (path.startsWith('/api/')) {
     // Admin's fetch() calls should see a parsable JSON error rather than an
     // HTML redirect — let apiClient bubble it up as a normal Error.

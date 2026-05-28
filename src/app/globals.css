@@ -498,6 +498,35 @@ input, textarea, select, .field__input { user-select: text; -webkit-user-select:
 .ovl-text__title { font-weight: 700; font-size: 13px; }
 .ovl-text__body  { font-weight: 400; font-size: 12px; opacity: 0.85; margin-top: 2px; }
 
+/* Admin-only — editable text card shows a grab cursor and 8 resize handles.
+   Handles inherit the card's CSS scale so they appear in proportion to the
+   label they're resizing; the underlying drag math is uniform-scale anyway. */
+.ovl-text__card--editable {
+  cursor: grab;
+  outline: 1px dashed rgba(255, 174, 92, 0.55);
+  outline-offset: 4px;
+}
+.ovl-text__card--editable:active { cursor: grabbing; }
+.ovl-text__handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #ff8a3d;
+  border: 1.5px solid #fff;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+  z-index: 2;
+}
+.ovl-text__handle--nw { top: -6px; left: -6px; cursor: nwse-resize; }
+.ovl-text__handle--n  { top: -6px; left: 50%; margin-left: -5px; cursor: ns-resize; }
+.ovl-text__handle--ne { top: -6px; right: -6px; cursor: nesw-resize; }
+.ovl-text__handle--e  { top: 50%; right: -6px; margin-top: -5px; cursor: ew-resize; }
+.ovl-text__handle--se { bottom: -6px; right: -6px; cursor: nwse-resize; }
+.ovl-text__handle--s  { bottom: -6px; left: 50%; margin-left: -5px; cursor: ns-resize; }
+.ovl-text__handle--sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
+.ovl-text__handle--w  { top: 50%; left: -6px; margin-top: -5px; cursor: ew-resize; }
+
 /* Line-overlay endpoints — small visible orange dots Pannellum positions for
    us. The dimension line is drawn between the centres of these dots by the
    pano-line-layer's rAF loop. Keeping them visible doubles as feedback so the
@@ -1010,6 +1039,106 @@ input, textarea, select, .field__input { user-select: text; -webkit-user-select:
 .admin__title { font-size: 28px; font-weight: 700; margin: 0 0 4px; letter-spacing: -0.01em; }
 .admin__subtitle { margin: 0; font-size: 13px; color: rgba(255, 255, 255, 0.55); font-family: ui-monospace, monospace; }
 
+/* Scene-editor layout: main column + a sticky right-hand scene switcher. The
+   row is centred and capped just wide enough for both (920 main + gap + 220
+   aside); flex lets the main column shrink on narrower laptops while the aside
+   holds its width. Below 1080px there's no room left, so the aside collapses
+   and the main column reclaims full width. */
+.admin__layout {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 24px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+.admin__main { flex: 1 1 920px; min-width: 0; max-width: 920px; }
+/* Centred panels inside the main column shouldn't re-centre against the wider
+   layout — let them fill the column instead. */
+.admin__main .admin__header,
+.admin__main .admin__panel { margin-left: 0; margin-right: 0; max-width: none; }
+.admin__aside {
+  flex: 0 0 220px;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  max-height: calc(100vh - 120px);
+  display: flex;
+}
+
+@media (max-width: 1080px) {
+  .admin__aside { display: none; }
+  .admin__main { max-width: 920px; margin: 0 auto; }
+}
+
+/* Quick-jump list of sibling scenes — fills the sticky aside and scrolls
+   vertically so a long tour stays out of the way. */
+.scene-switcher {
+  width: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  box-shadow: var(--glass-shadow);
+}
+.scene-switcher__title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+.scene-switcher__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+.scene-switcher__item a,
+.scene-switcher__item span[aria-current] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.7);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.scene-switcher__item a:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 138, 61, 0.5);
+  color: #fff;
+}
+.scene-switcher__item--active span[aria-current] {
+  border-color: var(--accent);
+  background: rgba(255, 138, 61, 0.15);
+  color: #fff;
+}
+.scene-switcher__num {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: ui-monospace, monospace;
+}
+.scene-switcher__item--active .scene-switcher__num { color: var(--accent); }
+.scene-switcher__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .admin__panel {
   max-width: 920px;
   margin: 0 auto 22px;
@@ -1200,6 +1329,9 @@ input, textarea, select, .field__input { user-select: text; -webkit-user-select:
 
 /* Embed snippet panel — readonly code box + iframe preview. */
 .embed-snippet {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
   line-height: 1.5;
@@ -1207,8 +1339,9 @@ input, textarea, select, .field__input { user-select: text; -webkit-user-select:
   overflow: auto;
   user-select: all;
 }
+.embed-snippet + .field__hint { display: block; margin-top: 6px; }
 .embed-preview {
-  margin-top: 10px;
+  margin-top: 14px;
   display: flex;
   flex-direction: column;
   gap: 6px;

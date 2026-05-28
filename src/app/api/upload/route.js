@@ -1,5 +1,6 @@
-import { jsonError, readJson } from '@/lib/http.js';
+import { jsonError, readJson, withApi } from '@/lib/http.js';
 import { generateObjectKey, presignPut } from '@/lib/r2.js';
+import { MAX_UPLOAD_BYTES, UPLOAD_MIME_BY_KIND } from '@/lib/limits.js';
 
 // Returns a presigned PUT URL the admin client uses to upload directly to R2.
 //
@@ -28,9 +29,7 @@ const PREFIX_BY_KIND = {
   floorplan: 'floorplans',
 };
 
-const MAX_BYTES = 500 * 1024 * 1024; // sanity cap; R2 itself allows up to 5 GB per PUT.
-
-export async function POST(req) {
+export const POST = withApi(async (req) => {
   const body = await readJson(req);
   if (!body) return jsonError('invalid JSON');
   if (!body.contentType) return jsonError('contentType is required');
@@ -38,12 +37,19 @@ export async function POST(req) {
   const kind = String(body.kind || 'pano');
   const prefix = PREFIX_BY_KIND[kind] || 'uploads';
 
-  if (body.size != null && body.size > MAX_BYTES) {
-    return jsonError(`size exceeds ${MAX_BYTES} bytes`, 413);
+  const allowed = UPLOAD_MIME_BY_KIND[kind];
+  if (allowed && !allowed.test(body.contentType)) {
+    return jsonError(`contentType ${body.contentType} not allowed for kind ${kind}`, 415);
+  }
+
+  if (body.size != null && body.size > MAX_UPLOAD_BYTES) {
+    return jsonError(`size exceeds ${MAX_UPLOAD_BYTES} bytes`, 413);
   }
 
   const key = generateObjectKey({ prefix, filename: body.filename });
 
+  // External call → preserve a 502 (bad gateway) on R2/S3 failure rather than
+  // letting withApi map it to a generic 500.
   try {
     const signed = await presignPut({ key, contentType: body.contentType });
     return Response.json(signed);
@@ -51,4 +57,4 @@ export async function POST(req) {
     console.error('[upload/sign] failed', err);
     return jsonError('failed to presign upload', 502, { detail: err.message });
   }
-}
+});

@@ -15,7 +15,7 @@
 
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["multiSchema"]
+  previewFeatures = ["multiSchema", "relationJoins"]
 }
 
 datasource db {
@@ -153,6 +153,14 @@ model Overlay {
   label String?
   title String?
   body  String?
+  // Uniform scale factor for the text overlay's rendered card. 1.0 = default
+  // size; admin's corner handles bump this in/out. Not used by line overlays.
+  scale Float @default(1)
+  // Explicit logical box dimensions (CSS pixels, pre-scale). Null = auto from
+  // content + the CSS max-width default. Admin's edge handles set these so
+  // long labels can be widened to avoid awkward wrapping.
+  boxWidth  Float?
+  boxHeight Float?
 
   scene   Scene  @relation(fields: [sceneId], references: [id], onDelete: Cascade)
   sceneId String

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/apiClient.js';
+import { MAX_TTS_CHARS } from '@/lib/limits.js';
 
 // Inline ElevenLabs TTS generator. Shown beneath the audio UploadField so the
 // admin can either upload a file *or* type a script and pick a voice/model.
@@ -127,12 +128,12 @@ export default function TtsPanel({ onGenerated, disabled }) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={4}
-          maxLength={5000}
+          maxLength={MAX_TTS_CHARS}
           placeholder="Type the narration script. Punctuation guides pacing."
           disabled={busy || disabled}
         />
         <span className="field__hint">
-          {text.length} / 5000 chars
+          {text.length} / {MAX_TTS_CHARS} chars
         </span>
       </label>
 

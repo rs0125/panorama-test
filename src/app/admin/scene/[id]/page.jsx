@@ -3,8 +3,8 @@ import Link from 'next/link';
 import PageShell from '@/components/PageShell.jsx';
 import SceneFormAdmin from '@/components/admin/SceneFormAdmin.jsx';
 import AnnotationListAdmin from '@/components/admin/AnnotationListAdmin.jsx';
-import HotspotEditor from '@/components/admin/HotspotEditor.jsx';
-import OverlayEditor from '@/components/admin/OverlayEditor.jsx';
+import PanoEditor from '@/components/admin/PanoEditor.jsx';
+import SceneSwitcher from '@/components/admin/SceneSwitcher.jsx';
 import { prisma } from '@/lib/db.js';
 
 export const dynamic = 'force-dynamic';
@@ -17,6 +17,11 @@ export default async function AdminScenePage({ params }) {
   // admin sees spatial context while placing this scene's dot.
   const scene = await prisma.scene.findUnique({
     where: { id },
+    // Load every relation in one JOINed query rather than a separate round-trip
+    // per relation. Each round-trip to the Supabase pooler is expensive
+    // (especially cold), so collapsing scene + annotations + hotspots +
+    // overlays + tour(+scenes) into a single statement bounds the worst case.
+    relationLoadStrategy: 'join',
     include: {
       annotations: { orderBy: { orderIndex: 'asc' } },
       hotspotsFrom: { select: { id: true, pitch: true, yaw: true, toSceneId: true } },
@@ -46,26 +51,34 @@ export default async function AdminScenePage({ params }) {
   return (
     <PageShell>
       <div className="admin">
-        <header className="admin__header">
-          <div className="admin__crumbs">
-            <Link href="/admin">Tours</Link>
-            <span> / </span>
-            <Link href={`/admin/tour/${scene.tour.id}`}>{scene.tour.title}</Link>
-            <span> / </span>
-            <span>{scene.title}</span>
-          </div>
-          <h1 className="admin__title">{scene.title}</h1>
-          <p className="admin__subtitle">/{scene.tour.slug}/{scene.slug}</p>
-        </header>
+        <div className="admin__layout">
+          <div className="admin__main">
+            <header className="admin__header">
+              <div className="admin__crumbs">
+                <Link href="/admin">Tours</Link>
+                <span> / </span>
+                <Link href={`/admin/tour/${scene.tour.id}`}>{scene.tour.title}</Link>
+                <span> / </span>
+                <span>{scene.title}</span>
+              </div>
+              <h1 className="admin__title">{scene.title}</h1>
+              <p className="admin__subtitle">/{scene.tour.slug}/{scene.slug}</p>
+            </header>
 
-        <SceneFormAdmin initialScene={scene} siblings={siblings} />
-        <HotspotEditor scene={scene} siblings={siblings} initialHotspots={scene.hotspotsFrom} />
-        <OverlayEditor
-          sceneId={scene.id}
-          imageUrl={scene.imageUrl}
-          initialOverlays={scene.overlays}
-        />
-        <AnnotationListAdmin sceneId={scene.id} initialAnnotations={scene.annotations} />
+            <SceneFormAdmin initialScene={scene} siblings={siblings} />
+            <PanoEditor
+              scene={scene}
+              siblings={siblings}
+              initialHotspots={scene.hotspotsFrom}
+              initialOverlays={scene.overlays}
+            />
+            <AnnotationListAdmin sceneId={scene.id} initialAnnotations={scene.annotations} />
+          </div>
+
+          <aside className="admin__aside">
+            <SceneSwitcher scenes={scene.tour.scenes} currentId={scene.id} />
+          </aside>
+        </div>
       </div>
     </PageShell>
   );

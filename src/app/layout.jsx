@@ -1,4 +1,3 @@
-import Script from 'next/script';
 import './globals.css';
 
 export const metadata = {
@@ -30,16 +29,11 @@ export default function RootLayout({ children }) {
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"
+          integrity="sha384-02yn80EH0cF+s23taAmuhEZ04p3CTbQvV0QZMr2reUxajpfvcLNKlzsPkZwx14mf"
+          crossOrigin="anonymous"
         />
       </head>
-      <body>
-        {/* Pannellum drops `window.pannellum`; the viewer polls for it. */}
-        <Script
-          src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"
-          strategy="beforeInteractive"
-        />
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

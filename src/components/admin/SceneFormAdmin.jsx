@@ -6,12 +6,7 @@ import { api } from '@/lib/apiClient.js';
 import { slugify } from '@/lib/http.js';
 import UploadField from './UploadField.jsx';
 import MinimapPicker from './MinimapPicker.jsx';
-
-function cropFromTour(tour) {
-  const { floorplanCropX: x, floorplanCropY: y, floorplanCropW: w, floorplanCropH: h } = tour;
-  if (x == null || y == null || w == null || h == null) return { x: 0, y: 0, w: 1, h: 1 };
-  return { x, y, w, h };
-}
+import { cropFromTour } from '@/lib/floorplan.js';
 
 export default function SceneFormAdmin({ initialScene, siblings = [] }) {
   const router = useRouter();

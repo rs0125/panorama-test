@@ -1,7 +1,7 @@
-import { jsonError } from '@/lib/http.js';
+import { jsonError, withApi } from '@/lib/http.js';
 import { listModels } from '@/lib/elevenlabs.js';
 
-export async function GET() {
+export const GET = withApi(async () => {
   try {
     const models = (await listModels()).filter((m) => m.canDoTextToSpeech);
     return Response.json({ models });
@@ -9,4 +9,4 @@ export async function GET() {
     console.error('[tts/models]', err);
     return jsonError(err.message || 'failed to list models', err.status === 401 ? 401 : 502);
   }
-}
+});

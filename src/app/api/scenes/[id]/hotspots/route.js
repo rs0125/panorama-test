@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db.js';
-import { jsonError, readJson } from '@/lib/http.js';
+import { jsonError, readJson, withApi } from '@/lib/http.js';
 
 // Creates a single navigation hotspot. The bulk endpoint (/hotspots/bulk) is
 // what the admin editor actually uses; this is kept for one-off API calls.
@@ -7,7 +7,7 @@ import { jsonError, readJson } from '@/lib/http.js';
 // Sequential reads (Promise.all) + a separate create. Interactive transactions
 // don't ride Supabase's transaction pooler.
 
-export async function POST(req, { params }) {
+export const POST = withApi(async (req, { params }) => {
   const { id } = await params;
   const body = await readJson(req);
   if (!body) return jsonError('invalid JSON');
@@ -33,4 +33,4 @@ export async function POST(req, { params }) {
     },
   });
   return Response.json(hotspot, { status: 201 });
-}
+});

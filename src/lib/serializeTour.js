@@ -1,3 +1,5 @@
+import { cropFromTour } from './floorplan.js';
+
 // Shape Prisma rows into the structure the viewer components expect.
 //
 // Why a separate layer: PanoViewer, Minimap, etc. were written against the
@@ -44,6 +46,9 @@ export function serializeTour(tour) {
         label: o.label || null,
         title: o.title || null,
         body: o.body || null,
+        scale: o.scale ?? 1,
+        boxWidth: o.boxWidth ?? null,
+        boxHeight: o.boxHeight ?? null,
       })),
     }));
 
@@ -56,22 +61,11 @@ export function serializeTour(tour) {
     floorplan: tour.floorplanUrl
       ? {
           image: tour.floorplanUrl,
-          crop: serializeCrop(tour),
+          crop: cropFromTour(tour),
         }
       : null,
     scenes,
   };
-}
-
-function serializeCrop(tour) {
-  const x = tour.floorplanCropX;
-  const y = tour.floorplanCropY;
-  const w = tour.floorplanCropW;
-  const h = tour.floorplanCropH;
-  if (x == null || y == null || w == null || h == null) {
-    return { x: 0, y: 0, w: 1, h: 1 };
-  }
-  return { x, y, w, h };
 }
 
 // Cheap version for the homepage cards — skips scenes' annotations/hotspots.

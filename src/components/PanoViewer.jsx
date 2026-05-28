@@ -6,10 +6,8 @@ import {
   drawLineOverlays,
   removeLineLayer,
 } from '@/lib/overlayRendering.js';
-
-const EDIT_MODE =
-  typeof window !== 'undefined' &&
-  new URLSearchParams(window.location.search).has('edit');
+import { waitForPannellum } from '@/lib/pannellum.js';
+import PannellumLoader from './PannellumLoader.jsx';
 
 function buildHotspotTooltip(hotDiv, args) {
   hotDiv.classList.add('hs');
@@ -56,27 +54,10 @@ const NADIR_PATCH = Object.freeze({
 // Overlay rendering helpers live in src/lib/overlayRendering.js so both the
 // public PanoViewer and the admin OverlayEditor share the same code.
 
-function waitForPannellum() {
-  return new Promise((resolve) => {
-    if (window.pannellum) return resolve(window.pannellum);
-    const id = setInterval(() => {
-      if (window.pannellum) {
-        clearInterval(id);
-        resolve(window.pannellum);
-      }
-    }, 30);
-  });
-}
-
 export default function PanoViewer({ scenes, currentSceneId, onSceneChange, onLoadingChange }) {
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
   const [loading, setLoading] = useState(true);
-  const [editTarget, setEditTarget] = useState(
-    () => scenes.find((s) => s.id !== currentSceneId)?.id || scenes[0].id
-  );
-  const editTargetRef = useRef(editTarget);
-  useEffect(() => { editTargetRef.current = editTarget; }, [editTarget]);
 
   useEffect(() => {
     let cancelled = false;
@@ -151,31 +132,6 @@ export default function PanoViewer({ scenes, currentSceneId, onSceneChange, onLo
       });
 
 
-      if (EDIT_MODE) {
-        const onClick = (e) => {
-          if (!viewerRef.current) return;
-          try {
-            const [pitch, yaw] = viewerRef.current.mouseEventToCoords(e);
-            const from = viewerRef.current.getScene();
-            const to = editTargetRef.current;
-            const entry = {
-              from,
-              to,
-              pitch: +pitch.toFixed(2),
-              yaw: +yaw.toFixed(2),
-            };
-            const line = `{ from: '${entry.from}', to: '${entry.to}', pitch: ${entry.pitch}, yaw: ${entry.yaw} },`;
-            console.log(line, entry);
-            navigator.clipboard?.writeText(line).catch(() => {});
-          } catch (err) {
-            console.warn('Failed to capture click coords', err);
-          }
-        };
-        containerRef.current.addEventListener('click', onClick);
-        viewerRef.current.__cleanupEdit = () => {
-          containerRef.current?.removeEventListener('click', onClick);
-        };
-      }
       const doResize = () => {
         try { viewerRef.current?.resize(); } catch {}
       };
@@ -201,9 +157,14 @@ export default function PanoViewer({ scenes, currentSceneId, onSceneChange, onLo
             const sceneKey = v.getScene?.();
             const scene = sceneKey ? sceneById[sceneKey] : null;
             const lines = (scene?.overlays || []).filter((o) => o.type === 'line');
-            drawLineOverlays(containerRef.current, lines, {
-              view: { pitch: v.getPitch(), yaw: v.getYaw(), hfov: v.getHfov() },
-            });
+            // Skip the work when nothing's on screen. The rAF schedule itself
+            // is cheap; the expensive part is the Pannellum getters + SVG
+            // projection. Tours without dimension lines pay nothing per frame.
+            if (lines.length > 0) {
+              drawLineOverlays(containerRef.current, lines, {
+                view: { pitch: v.getPitch(), yaw: v.getYaw(), hfov: v.getHfov() },
+              });
+            }
           }
         } catch {}
         rafId = requestAnimationFrame(tick);
@@ -219,7 +180,6 @@ export default function PanoViewer({ scenes, currentSceneId, onSceneChange, onLo
       ro?.disconnect();
       if (viewerRef.current) {
         try { viewerRef.current.__cleanupResize?.(); } catch {}
-        try { viewerRef.current.__cleanupEdit?.(); } catch {}
         try { viewerRef.current.__cleanupOverlays?.(); } catch {}
         try { viewerRef.current.destroy(); } catch {}
         viewerRef.current = null;
@@ -241,26 +201,8 @@ export default function PanoViewer({ scenes, currentSceneId, onSceneChange, onLo
 
   return (
     <>
+      <PannellumLoader />
       <div ref={containerRef} className={`pano-container ${loading ? 'is-loading' : ''}`} />
-      {EDIT_MODE && (
-        <div className="edit-bar">
-          <span className="edit-bar__label">Hotspot target →</span>
-          <select
-            className="edit-bar__select"
-            value={editTarget}
-            onChange={(e) => setEditTarget(e.target.value)}
-          >
-            {scenes
-              .filter((s) => s.id !== currentSceneId)
-              .map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.title}
-                </option>
-              ))}
-          </select>
-          <span className="edit-bar__hint">click pano to log coords</span>
-        </div>
-      )}
     </>
   );
 }

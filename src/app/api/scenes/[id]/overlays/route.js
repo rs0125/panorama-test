@@ -1,9 +1,9 @@
 import { prisma } from '@/lib/db.js';
-import { jsonError, pickDefined, readJson } from '@/lib/http.js';
+import { jsonError, pickDefined, readJson, withApi } from '@/lib/http.js';
 
 // Sequential check-then-create — interactive $transaction can't ride the
 // Supabase transaction-mode pooler.
-export async function POST(req, { params }) {
+export const POST = withApi(async (req, { params }) => {
   const { id } = await params;
   const body = await readJson(req);
   if (!body) return jsonError('invalid JSON');
@@ -23,8 +23,8 @@ export async function POST(req, { params }) {
       type,
       pitch: body.pitch,
       yaw: body.yaw,
-      ...pickDefined(body, ['pitch2', 'yaw2', 'label', 'title', 'body']),
+      ...pickDefined(body, ['pitch2', 'yaw2', 'label', 'title', 'body', 'scale', 'boxWidth', 'boxHeight']),
     },
   });
   return Response.json(overlay, { status: 201 });
-}
+});

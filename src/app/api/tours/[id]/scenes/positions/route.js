@@ -1,6 +1,7 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db.js';
 import { findTourByIdOrSlug } from '@/lib/repos/tour.js';
-import { jsonError, readJson } from '@/lib/http.js';
+import { jsonError, readJson, withApi } from '@/lib/http.js';
 
 // Bulk-update minimap positions for scenes in a tour. One round-trip + one
 // Prisma transaction instead of N PATCHes from the admin's "Save minimap".
@@ -10,7 +11,7 @@ import { jsonError, readJson } from '@/lib/http.js';
 //
 // We verify every id actually belongs to this tour before touching anything —
 // otherwise a malicious caller could move scenes between tours via this route.
-export async function POST(req, { params }) {
+export const POST = withApi(async (req, { params }) => {
   const { id } = await params;
   const body = await readJson(req);
   const positions = body?.positions;
@@ -40,13 +41,16 @@ export async function POST(req, { params }) {
     }
   }
 
-  await prisma.$transaction(
-    positions.map((p) =>
-      prisma.scene.update({
-        where: { id: p.id },
-        data: { minimapX: p.minimapX, minimapY: p.minimapY },
-      })
-    )
+  // One round-trip via `UPDATE … FROM (VALUES …)` instead of N per-row
+  // updates wrapped in $transaction — latency-bound on Supabase's pooler.
+  const rows = positions.map(
+    (p) => Prisma.sql`(${p.id}, ${p.minimapX}::float8, ${p.minimapY}::float8)`
   );
+  await prisma.$executeRaw`
+    UPDATE "Scene" AS s
+    SET "minimapX" = v.x, "minimapY" = v.y
+    FROM (VALUES ${Prisma.join(rows)}) AS v(id, x, y)
+    WHERE s.id = v.id
+  `;
   return new Response(null, { status: 204 });
-}
+});

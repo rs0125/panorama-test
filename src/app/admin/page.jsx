@@ -11,7 +11,13 @@ export const metadata = {
 export default async function AdminHomePage() {
   const tours = await prisma.tour.findMany({
     orderBy: { createdAt: 'asc' },
-    include: { _count: { select: { scenes: true } } },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      createdAt: true,
+      _count: { select: { scenes: true } },
+    },
   });
 
   return (

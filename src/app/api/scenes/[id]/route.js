@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db.js';
-import { jsonError, pickDefined, readJson, slugify } from '@/lib/http.js';
-import { orphanedKeys, scheduleR2Cleanup, SCENE_ASSET_FIELDS } from '@/lib/repos/scene.js';
+import { jsonError, normalizeSlug, pickDefined, readJson, withApi } from '@/lib/http.js';
+import { SCENE_ASSET_FIELDS } from '@/lib/repos/scene.js';
+import { orphanedKeys, scheduleR2Cleanup } from '@/lib/r2cleanup.js';
 
 const SCENE_PATCH_FIELDS = [
   'title',
@@ -13,7 +14,7 @@ const SCENE_PATCH_FIELDS = [
   'initialHfov',
 ];
 
-export async function GET(_req, { params }) {
+export const GET = withApi(async (_req, { params }) => {
   const { id } = await params;
   const scene = await prisma.scene.findUnique({
     where: { id },
@@ -26,18 +27,16 @@ export async function GET(_req, { params }) {
   });
   if (!scene) return jsonError('scene not found', 404);
   return Response.json(scene);
-}
+});
 
-export async function PATCH(req, { params }) {
+export const PATCH = withApi(async (req, { params }) => {
   const { id } = await params;
   const body = await readJson(req);
   if (!body) return jsonError('invalid JSON');
 
   const data = pickDefined(body, SCENE_PATCH_FIELDS);
   if (body.slug !== undefined) {
-    const slug = slugify(body.slug);
-    if (!slug) return jsonError('slug is empty after normalisation');
-    data.slug = slug;
+    data.slug = normalizeSlug(body.slug);
   }
 
   // Sequential read then write. We deliberately don't wrap in
@@ -51,29 +50,15 @@ export async function PATCH(req, { params }) {
   const prev = await prisma.scene.findUnique({ where: { id } });
   if (!prev) return jsonError('scene not found', 404);
 
-  let next;
-  try {
-    next = await prisma.scene.update({ where: { id }, data });
-  } catch (err) {
-    if (err.code === 'P2025') return jsonError('scene not found', 404);
-    if (err.code === 'P2002') return jsonError('scene slug already in use for this tour', 409);
-    throw err;
-  }
-
-  scheduleR2Cleanup(orphanedKeys(prev, next));
+  const next = await prisma.scene.update({ where: { id }, data });
+  scheduleR2Cleanup(orphanedKeys(prev, next, SCENE_ASSET_FIELDS));
   return Response.json(next);
-}
+});
 
-export async function DELETE(_req, { params }) {
+export const DELETE = withApi(async (_req, { params }) => {
   const { id } = await params;
-  let deleted;
-  try {
-    deleted = await prisma.scene.delete({ where: { id } });
-  } catch (err) {
-    if (err.code === 'P2025') return jsonError('scene not found', 404);
-    throw err;
-  }
+  const deleted = await prisma.scene.delete({ where: { id } });
   // After the row is gone every asset on it is orphaned.
-  scheduleR2Cleanup(orphanedKeys(deleted));
+  scheduleR2Cleanup(orphanedKeys(deleted, null, SCENE_ASSET_FIELDS));
   return new Response(null, { status: 204 });
-}
+});

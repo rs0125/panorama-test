@@ -1,6 +1,7 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db.js';
 import { findTourByIdOrSlug } from '@/lib/repos/tour.js';
-import { jsonError, readJson } from '@/lib/http.js';
+import { jsonError, readJson, withApi } from '@/lib/http.js';
 
 // Bulk-reorder scenes within a tour. Atomic so a partial failure can't leave
 // the order corrupted.
@@ -11,7 +12,7 @@ import { jsonError, readJson } from '@/lib/http.js';
 // Every scene in the tour must appear in `order` exactly once — that way we
 // know we have a complete permutation, not a partial reshuffle, and the
 // resulting orderIndex range is dense (0..N-1).
-export async function POST(req, { params }) {
+export const POST = withApi(async (req, { params }) => {
   const { id } = await params;
   const body = await readJson(req);
   const order = body?.order;
@@ -29,10 +30,14 @@ export async function POST(req, { params }) {
     return jsonError('order must contain every scene id in this tour exactly once', 422);
   }
 
-  await prisma.$transaction(
-    order.map((sceneId, idx) =>
-      prisma.scene.update({ where: { id: sceneId }, data: { orderIndex: idx } })
-    )
-  );
+  // One round-trip via `UPDATE … FROM (VALUES …)` instead of N per-row
+  // updates wrapped in $transaction.
+  const rows = order.map((sceneId, idx) => Prisma.sql`(${sceneId}, ${idx}::int)`);
+  await prisma.$executeRaw`
+    UPDATE "Scene" AS s
+    SET "orderIndex" = v.idx
+    FROM (VALUES ${Prisma.join(rows)}) AS v(id, idx)
+    WHERE s.id = v.id
+  `;
   return new Response(null, { status: 204 });
-}
+});

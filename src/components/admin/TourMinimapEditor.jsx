@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Floorplan, { cropAspect } from '@/components/Floorplan.jsx';
 import { api } from '@/lib/apiClient.js';
+import { clamp01, round } from '@/lib/num.js';
+import { cropFromTour } from '@/lib/floorplan.js';
 
 // Tour-level minimap editor.
 //
@@ -214,11 +216,3 @@ export default function TourMinimapEditor({ tour, scenes: initialScenes }) {
   );
 }
 
-function clamp01(v) { return Math.max(0, Math.min(1, v)); }
-function round(v) { return Math.round(v * 1000) / 1000; }
-
-function cropFromTour(tour) {
-  const { floorplanCropX: x, floorplanCropY: y, floorplanCropW: w, floorplanCropH: h } = tour;
-  if (x == null || y == null || w == null || h == null) return { x: 0, y: 0, w: 1, h: 1 };
-  return { x, y, w, h };
-}

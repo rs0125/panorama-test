@@ -11,7 +11,12 @@ async function request(url, { method = 'GET', body } = {}) {
   const res = await fetch(url, init);
   if (res.status === 204) return null;
   const text = await res.text();
-  const data = text ? safeJson(text) : null;
+  const looksJson = (res.headers.get('content-type') || '').includes('application/json');
+  let data = null;
+  let parseFailed = false;
+  if (text) {
+    try { data = JSON.parse(text); } catch { parseFailed = true; }
+  }
   if (!res.ok) {
     const msg = data?.error || `${method} ${url} failed (${res.status})`;
     const err = new Error(msg);
@@ -19,18 +24,19 @@ async function request(url, { method = 'GET', body } = {}) {
     err.data = data;
     throw err;
   }
+  // 2xx but the body is non-JSON (proxy HTML, etc.) is a server-side bug —
+  // surface it instead of letting the caller destructure `null`.
+  if (parseFailed || (looksJson === false && text)) {
+    const err = new Error(`${method} ${url} returned a non-JSON 2xx response`);
+    err.status = res.status;
+    throw err;
+  }
   return data;
-}
-
-function safeJson(text) {
-  try { return JSON.parse(text); } catch { return null; }
 }
 
 export const api = {
   // Tours
-  listTours: () => request('/api/tours'),
   createTour: (body) => request('/api/tours', { method: 'POST', body }),
-  getTour: (id) => request(`/api/tours/${id}`),
   updateTour: (id, body) => request(`/api/tours/${id}`, { method: 'PATCH', body }),
   deleteTour: (id) => request(`/api/tours/${id}`, { method: 'DELETE' }),
 
@@ -41,7 +47,6 @@ export const api = {
     request(`/api/tours/${tourId}/scenes/reorder`, { method: 'POST', body: { order } }),
   updateScenePositions: (tourId, positions) =>
     request(`/api/tours/${tourId}/scenes/positions`, { method: 'POST', body: { positions } }),
-  getScene: (id) => request(`/api/scenes/${id}`),
   updateScene: (id, body) => request(`/api/scenes/${id}`, { method: 'PATCH', body }),
   deleteScene: (id) => request(`/api/scenes/${id}`, { method: 'DELETE' }),
 
